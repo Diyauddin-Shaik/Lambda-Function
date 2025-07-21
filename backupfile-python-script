@@ -1,0 +1,31 @@
+import boto3
+import datetime
+import tarfile
+import os
+
+FOLDER_TO_BACKUP = "/home/ubuntu/myfolder"
+S3_BUCKET_NAME = "ericsson-dev14-backup-docker"
+AWS_REGION = "us-east-1"
+BACKUP_PREFIX = "backups/"  
+
+now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M")
+backup_filename = f"/tmp/backup-{now}.tar.gz"
+
+# print(now)
+
+with tarfile.open(backup_filename, "w:gz") as tar:
+    tar.add(FOLDER_TO_BACKUP, arcname=os.path.basename(FOLDER_TO_BACKUP))
+    
+print(f"Backup created at: {backup_filename}")
+
+s3 = boto3.client('s3', region_name=AWS_REGION)
+key = BACKUP_PREFIX + os.path.basename(backup_filename)
+
+try:
+    s3.upload_file(backup_filename, S3_BUCKET_NAME, key)
+    print(f"Backup uploaded to s3://{S3_BUCKET_NAME}/{key}")
+except Exception as e:
+    print(f"Upload failed: {e}")
+
+
+
